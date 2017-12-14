@@ -4,8 +4,18 @@ class routeCalculator:
 
     def __init__(self,dictionary,values):
         self.best=999999
+        self.bestAuto=999999
+        self.bestX=999999
+        self.bestMini=999999
+        self.travellingDuration=0
+        self.travellingDurationAuto=0
+        self.travellingDurationX=0
+        self.travellingDurationMini=0
         self.values=values
         self.bestRoute=[]
+        self.bestRouteAuto=[]
+        self.bestRouteX=[]
+        self.bestRouteMini=[]
         self.dictionary=dictionary
         self.population=[]
         self.fitness=[]
@@ -33,8 +43,22 @@ class routeCalculator:
 
     def calculateParameters(self,route):
         routeMoney=0
+        routeMoneyAuto=0
+        routeMoneyX=0
+        routeMoneyMini=0
+        routeTime=0
+        routeTimeAuto=0
+        routeTimeX=0
+        routeTimeMini=0
         end=False
         surgeFactor=1.0
+        surgeFactorAuto=1.0
+        surgeFactorX=1.0
+        surgeFactorMini=1.0
+        signGo=True
+        signAuto=True
+        signX=True
+        signMini=True
         for x in range(len(route)):
             if x!=1:
                 if x==0:
@@ -44,18 +68,53 @@ class routeCalculator:
                     end=True
                 else:
                     link=str(route[x])+str(route[x+1])
-                #print(link)
                 if link in self.dictionary:
                     if x==0:
-                        #print("alpha")
-                        surgeFactor=float(self.dictionary[link]['surge'])
-                    routeMoney=routeMoney+(float(self.dictionary[link]['price'])*float(surgeFactor))
-                    #print(routeMoney)
-
+                        if 'uberGO' in self.dictionary[link]:
+                            surgeFactor=float(self.dictionary[link]['uberGO']['surge'])
+                        if 'uberAUTO' in self.dictionary[link]:
+                            surgeFactorAuto=float(self.dictionary[link]['uberAUTO']['surge'])
+                        if 'uberX' in self.dictionary[link]:
+                            surgeFactorX=float(self.dictionary[link]['uberX']['surge'])
+                        if 'Mini' in self.dictionary[link]:
+                            surgeFactorMini=float(self.dictionary[link]['Mini']['surge'])
+                    if 'uberGO' in self.dictionary[link]:
+                        routeMoney=routeMoney+(float(self.dictionary[link]['uberGO']['price'])*float(surgeFactor))
+                        routeTime=routeTime+(float(self.dictionary[link]['uberGO']['duration'])/60)
+                    else:
+                        signGo=False
+                    if 'uberAUTO' in self.dictionary[link]:
+                        routeMoneyAuto=routeMoneyAuto+(float(self.dictionary[link]['uberAUTO']['price'])*float(surgeFactorAuto))
+                        routeTimeAuto=routeTimeAuto+(float(self.dictionary[link]['uberAUTO']['duration'])/60)
+                    else:
+                        signAuto=False
+                    if 'uberX' in self.dictionary[link]:
+                        routeMoneyX=routeMoneyX+(float(self.dictionary[link]['uberX']['price'])*float(surgeFactorX))
+                        routeTimeX=routeTimeX+(float(self.dictionary[link]['uberX']['duration'])/60)
+                    else:
+                        signX=False
+                    if 'Mini' in self.dictionary[link]:
+                        routeMoneyMini=routeMoneyMini+(float(self.dictionary[link]['Mini']['price'])*float(surgeFactorMini))
+                        routeTimeMini=routeTimeMini+(float(self.dictionary[link]['Mini']['duration'])/60)
+                    else:
+                        signMini=False
                 if end==True:
-                    if routeMoney<self.best:
+                    if routeMoney<self.best and signGo==True:
                         self.best=routeMoney
                         self.bestRoute=route
+                        self.travellingDuration=routeTime
+                    if routeMoneyAuto<self.bestAuto and signAuto==True:
+                        self.bestAuto=routeMoneyAuto
+                        self.bestRouteAuto=route
+                        self.travellingDurationAuto=routeTimeAuto
+                    if routeMoneyX<self.bestX and signX==True:
+                        self.bestX=routeMoneyX
+                        self.bestRouteX=route
+                        self.travellingDurationX=routeTimeX
+                    if routeMoneyMini<self.bestMini and signMini==True:
+                        self.bestMini=routeMoneyMini
+                        self.bestRouteMini=route
+                        self.travellingDurationMini=routeTimeMini
         return routeMoney
 
     def destinationPermutations(self,vals):
@@ -119,12 +178,46 @@ class routeCalculator:
     def printing(self,addresses,symbols):
         bRoute=[]
         bRoute.append('I')
+        aRoute=bRoute[:]
+        xRoute=bRoute[:]
+        mRoute=bRoute[:]
         b=self.bestRoute[2:len(self.bestRoute)]
+        a=self.bestRouteAuto[2:len(self.bestRouteAuto)]
+        x=self.bestRouteX[2:len(self.bestRouteX)]
+        m=self.bestRouteMini[2:len(self.bestRouteMini)]
         for y in b:
             bRoute.append(y)
+        for f in a:
+            aRoute.append(f)
+        for k in x:
+            xRoute.append(k)
+        for o in m:
+            mRoute.append(o)
         bRoute.append('F')
-        print("Cheapest fair for UberAUTO : " +  str(self.best))    
-        print("Best Route : " +  str(bRoute))
+        aRoute.append('F')
+        xRoute.append('F')
+        mRoute.append('F')
+        if self.best<999999:
+            print("Cheapest fair for UberGO : " +  str(self.best) + "  --  Duration : " + str(self.travellingDuration)+" mins")    
+            print("Best Route : " +  str(bRoute))
+        else:
+            print ("UberGO data is missing in some packets, for this reason the program cannot calculate the best rate for this service")
+        if self.bestAuto<999999:
+            print("Cheapest fair for UberAUTO : " +  str(self.bestAuto)+ "  --  Duration : " + str(self.travellingDurationAuto)+" mins")    
+            print("Best Route : " +  str(aRoute))
+        else:
+            print ("UberAuto data is missing in some packets, for this reason the program cannot calculate the best rate for this service")
+        if self.bestX<999999:
+            print("Cheapest fair for UberX : " +  str(self.bestX)+ "  --  Duration : " + str(self.travellingDurationX)+" mins")    
+            print("Best Route : " +  str(xRoute))
+        else:
+            print ("UberX data is missing in some packets, for this reason the program cannot calculate the best rate for this service")
+        if self.bestMini<999999:
+            print("Cheapest fair for Mini : " +  str(self.bestMini)+ "  --  Duration : " + str(self.travellingDurationMini)+" mins")    
+            print("Best Route : " +  str(mRoute))
+        else:
+            print ("Mini data is missing in some packets, for this reason the program cannot calculate the best rate for this service")
+        
         for k in range(len(addresses)):
             print (symbols[k] + "  -  " + addresses[k])
         

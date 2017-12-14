@@ -5,7 +5,7 @@ from uber_rides.session import Session
 from uber_rides.client import UberRidesClient
 from geocoder import google
 from RouteCalculator import routeCalculator
-
+import json
 #gloabal variable declared
 
 #bestRoute=[]
@@ -28,14 +28,21 @@ def getPriceEstimate(q,initialLat,initialLng,finalLat,finalLng,keyString):
     averagePrice=0
     duration=0
     surge=1
+    #dict1={}
+    newString=keyString
     response = client.get_price_estimates(start_latitude=initialLat,\
         start_longitude=initialLng,end_latitude=finalLat,\
         end_longitude=finalLng,seat_count=2)
     estimate = response.json.get('prices')
-    averagePrice=(float(str(estimate[0]['high_estimate']))+float(str(estimate[0]['low_estimate'])))/2
-    duration = float(str(estimate[0]['duration']))
-    surge= float(str(estimate[0]['surge_multiplier']))
-    newString=keyString+"@"+str(averagePrice)+"@"+str(duration)+"@"+str(surge)
+    #dict1=json.loads(estimate)
+    #print (estimate)
+    newString=newString+"!"+str(len(estimate))
+    for z in range(len(estimate)):
+        displayName=(str(estimate[z]['display_name']))
+        averagePrice=(float(str(estimate[z]['high_estimate']))+float(str(estimate[0]['low_estimate'])))/2
+        duration = float(str(estimate[z]['duration']))
+        surge= float(str(estimate[z]['surge_multiplier']))
+        newString=newString+"!"+str(displayName)+"@"+str(averagePrice)+"@"+str(duration)+"@"+str(surge)
     q.put(newString)
     q.task_done()
     
@@ -134,13 +141,18 @@ if __name__ == "__main__":
         q.join()
         for a in range(elements):
             s=q.get()
-            stringSplit=s.split("@")
+            #print(s)
+            stringSplit=s.split("!")
             if stringSplit[0] not in dictionary:
                 dictionary[stringSplit[0]]={}
-                dictionary[stringSplit[0]]['price']=stringSplit[1]
-                dictionary[stringSplit[0]]['duration']=stringSplit[2]
-                dictionary[stringSplit[0]]['surge']=stringSplit[3]
-                #print dictionary
+                #print(int(stringSplit[1]))
+                for t in range(int(stringSplit[1])):
+                    stringSplit1=stringSplit[t+2].split("@")
+                    dictionary[stringSplit[0]][stringSplit1[0]]={}
+                    dictionary[stringSplit[0]][stringSplit1[0]]['price']=stringSplit1[1]
+                    dictionary[stringSplit[0]][stringSplit1[0]]['duration']=stringSplit1[2]
+                    dictionary[stringSplit[0]][stringSplit1[0]]['surge']=stringSplit1[3]
+        #print dictionary
         values=[]
         for t in range(count-1):
             values.append(t+1)
@@ -148,7 +160,7 @@ if __name__ == "__main__":
         router=routeCalculator(dictionary,values)
         if count==1:
             print('Fare = ' + str(dictionary['IF']['uberAUTO']['price']))
-        elif count<9:
+        elif count<8:
             router.checkEveryCombination()
             router.printing(addresses,addressSymbols)
             
@@ -168,9 +180,8 @@ if __name__ == "__main__":
                 loopCount=-1
                 break
             if val=='o':
-                if count>8:
+                if count>7:
                     router.optimizeSolution()
-                    router.printing(addresses,addressSymbols)
-                    
+                    router.printing(addresses,addressSymbols)   
                 else:
                     print("The perfect solution is already provided")
