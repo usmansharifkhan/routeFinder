@@ -9,6 +9,7 @@ pip install geocoder
 Try the above mentioned pip commands in case libraries are not present on your system.
 
 Try: python RoutePlanner.py to  run the program.
+Try running python RoutePlanners.py to  run the updated program incorporating the functionality of certain hops order.
 
 In case google can't verify the coordinates, try retyping the address. More often than not the coordinates get verified with the same string.
 1) Start with entering the pickup address
